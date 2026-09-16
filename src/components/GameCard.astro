@@ -22,6 +22,10 @@ const { game } = Astro.props;
         <div class="relative z-10">
             <h3 class="text-xl font-semibold text-slate-100 mb-2 group-hover:text-blue-400 transition-colors" data-testid="game-title">{game.title}</h3>
 
+            <p class="text-sm text-slate-400 mb-2" data-testid="game-rating">
+                {game.starRating !== null ? `${game.starRating} / 5` : 'No rating yet'}
+            </p>
+
             {(game.category?.name || game.publisher?.name) && (
                 <div class="flex gap-2 mb-3">
                     {game.category?.name && (

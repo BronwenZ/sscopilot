@@ -24,6 +24,31 @@ test.describe('Game Listing and Navigation', () => {
     });
   });
 
+  test('should filter games by category and publisher', async ({ page }) => {
+    await page.goto('/');
+
+    const allCards = page.getByTestId('game-card');
+    const totalGames = await allCards.count();
+    await page.getByRole('checkbox', { name: 'Strategy' }).check();
+
+    const categoryCards = page.locator('[data-testid="game-card"]:visible');
+    await expect(categoryCards).toHaveCount(4);
+    expect(await categoryCards.count()).toBeLessThan(totalGames);
+    await expect(page).toHaveURL(/category=\d+/);
+
+    await page.getByTestId('publisher-filter').selectOption({ label: 'CodeForge Studios' });
+    await expect(page.locator('[data-testid="game-card"]:visible')).toHaveCount(1);
+    await expect(page).toHaveURL(/category=\d+&publisher=\d+/);
+  });
+
+  test('should show an empty state when filters have no matches', async ({ page }) => {
+    await page.goto('/?publisher=99999');
+
+    await expect(page.getByTestId('filter-result-count')).toHaveText('Showing 0 games');
+    await expect(page.getByTestId('filter-empty-state')).toBeVisible();
+    await expect(page.locator('[data-testid="game-card"]:visible')).toHaveCount(0);
+  });
+
   test('should navigate to correct game details page when clicking on a game', async ({ page }) => {
     let gameId: string | null;
     let gameTitle: string | null;

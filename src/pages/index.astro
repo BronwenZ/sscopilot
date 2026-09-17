@@ -4,11 +4,16 @@ import GameCard from '../components/GameCard.astro';
 import PageHero from '../components/PageHero.astro';
 import EmptyState from '../components/EmptyState.astro';
 import { getDatabase } from '../lib/db';
-import { getAllGames } from '../lib/games';
+import { getAllCategories, getAllGames, getAllPublishers } from '../lib/games';
 
 export const prerender = true;
 
-const games = await getAllGames(getDatabase());
+const db = getDatabase();
+const [games, categories, publishers] = await Promise.all([
+  getAllGames(db),
+  getAllCategories(db),
+  getAllPublishers(db),
+]);
 ---
 
 <Layout title="Tailspin Toys - Crowdfunding your new favorite game!">
@@ -24,10 +29,113 @@ const games = await getAllGames(getDatabase());
       {games.length === 0 ? (
         <EmptyState text="No games available at the moment." />
       ) : (
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="games-grid">
-          {games.map((game) => <GameCard game={game} />)}
-        </div>
+        <>
+          <form
+            class="mb-8 grid gap-6 rounded-xl border border-slate-700 bg-slate-800/60 p-6 shadow-lg md:grid-cols-[2fr_1fr_auto] md:items-end"
+            data-testid="game-filters"
+          >
+            <fieldset>
+              <legend class="mb-3 text-sm font-semibold text-slate-200">Categories</legend>
+              <div class="flex flex-wrap gap-3">
+                {categories.map((category) => (
+                  <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
+                    <input
+                      type="checkbox"
+                      name="category"
+                      value={category.id}
+                      class="h-4 w-4 rounded border-slate-600 bg-slate-900 text-blue-500 focus:ring-2 focus:ring-blue-500"
+                      data-testid={`category-filter-${category.id}`}
+                    />
+                    <span>{category.name}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <div>
+              <label for="publisher-filter" class="mb-3 block text-sm font-semibold text-slate-200">Publisher</label>
+              <select
+                id="publisher-filter"
+                name="publisher"
+                class="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                data-testid="publisher-filter"
+              >
+                <option value="">All publishers</option>
+                {publishers.map((publisher) => <option value={publisher.id}>{publisher.name}</option>)}
+              </select>
+            </div>
+
+            <button
+              type="reset"
+              class="rounded-lg border border-slate-600 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              data-testid="clear-filters"
+            >
+              Clear filters
+            </button>
+          </form>
+
+          <p class="mb-4 text-sm text-slate-400" data-testid="filter-result-count" aria-live="polite">
+            Showing {games.length} {games.length === 1 ? 'game' : 'games'}
+          </p>
+
+          <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" data-testid="games-grid">
+            {games.map((game) => <GameCard game={game} />)}
+          </div>
+
+          <div class="mt-6 hidden" data-testid="filter-empty-state">
+            <EmptyState text="No games match those filters." />
+          </div>
+        </>
       )}
     </div>
   </div>
 </Layout>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('[data-testid="game-filters"]');
+  const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="game-card"]'));
+  const resultCount = document.querySelector<HTMLElement>('[data-testid="filter-result-count"]');
+  const emptyState = document.querySelector<HTMLElement>('[data-testid="filter-empty-state"]');
+  const publisherFilter = document.querySelector<HTMLSelectElement>('[data-testid="publisher-filter"]');
+  const categoryFilters = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="category"]'));
+
+  if (form && resultCount && emptyState && publisherFilter) {
+    const params = new URLSearchParams(window.location.search);
+    const selectedCategories = new Set(params.getAll('category'));
+    let requestedPublisher = params.get('publisher') ?? '';
+
+    categoryFilters.forEach((filter) => {
+      filter.checked = selectedCategories.has(filter.value);
+    });
+    publisherFilter.value = requestedPublisher;
+
+    const applyFilters = (): void => {
+      const activeCategories = categoryFilters.filter((filter) => filter.checked).map((filter) => filter.value);
+      const activePublisher = publisherFilter.value || requestedPublisher;
+      const visibleCards = cards.filter((card) => {
+        const categoryMatches =
+          activeCategories.length === 0 || activeCategories.includes(card.dataset.categoryId ?? '');
+        const publisherMatches = activePublisher === '' || card.dataset.publisherId === activePublisher;
+        const isVisible = categoryMatches && publisherMatches;
+        card.hidden = !isVisible;
+        return isVisible;
+      });
+
+      resultCount.textContent = `Showing ${visibleCards.length} ${visibleCards.length === 1 ? 'game' : 'games'}`;
+      emptyState.classList.toggle('hidden', visibleCards.length > 0);
+
+      const nextParams = new URLSearchParams();
+      activeCategories.forEach((category) => nextParams.append('category', category));
+      if (activePublisher !== '') {
+        nextParams.set('publisher', activePublisher);
+      }
+      const query = nextParams.toString();
+      window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+      requestedPublisher = publisherFilter.value;
+    };
+
+    form.addEventListener('change', applyFilters);
+    form.addEventListener('reset', () => requestAnimationFrame(applyFilters));
+    applyFilters();
+  }
+</script>

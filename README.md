@@ -84,7 +84,7 @@ the [data layer](.github/instructions/drizzle.instructions.md), and
 - Comments explain intent and decisions (**why**), not mechanics already expressed by the code (**what**).
 - Keep comments current, and use TSDoc for every exported function in `db/` and `src/lib/`, including `@param` and `@returns`.
 - Document the `Props` interface for every reusable `.astro` component.
-- TypeScript uses the ESLint-enforced baseline of single quotes, semicolons, and multiline trailing commas, alongside four-space indentation, strict equality, and readable braced control flow.
+- TypeScript conventions include single quotes, semicolons, multiline trailing commas, four-space indentation, strict equality, and readable braced control flow. ESLint currently enforces the subset of single quotes, semicolons, and strict equality; the other conventions remain documented guidance.
 
 ## Type checking
 

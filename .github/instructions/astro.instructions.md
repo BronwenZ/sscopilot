@@ -5,6 +5,8 @@ applyTo: '**/*.astro'
 
 # Astro Component Instructions
 
+Follow the repository-wide [coding standards](coding-standards.instructions.md). In particular, every reusable component must document its `Props` interface with TSDoc, and comments must explain intent rather than restating markup or control flow.
+
 ## Astro Component Patterns
 
 Astro handles everything in the UI: pages, layouts, components, routing, and content. The site is **fully prerendered** (`output: 'static'`) — there is no client-side UI framework and no separate API server. Pages read data **directly in frontmatter** at build time via the Drizzle/Node SQLite data-access helpers in `src/lib/`.
@@ -19,6 +21,7 @@ import GameCard from '../components/GameCard.astro';
 import { getDatabase } from '../lib/db';
 import { getAllGames } from '../lib/games';
 
+/** Properties accepted by the page component. */
 interface Props {
   title: string;
 }
@@ -32,6 +35,8 @@ const games = await getAllGames(getDatabase());
 </Layout>
 ```
 
+Document each reusable component's `Props` interface immediately above it. Add property-level documentation when a prop's purpose, accepted values, or optional behavior is not obvious from its type.
+
 ## Layouts
 
 - Create reusable layout components in `src/layouts/`
@@ -43,6 +48,7 @@ const games = await getAllGames(getDatabase());
 
 ```astro
 ---
+/** Properties accepted by the layout component. */
 interface Props {
   title: string;
 }
@@ -61,6 +67,8 @@ const { title } = Astro.props;
   </body>
 </html>
 ```
+
+Document each reusable component's `Props` interface immediately above it. Add property-level documentation when a prop's purpose, accepted values, or optional behavior is not obvious from its type.
 
 ## Pages
 

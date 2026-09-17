@@ -5,6 +5,8 @@ applyTo: 'db/**/*.ts,src/lib/*.ts'
 
 # Drizzle ORM + Node SQLite Instructions
 
+Follow the repository-wide [coding standards](coding-standards.instructions.md). Exported functions in `db/` and `src/lib/` require TSDoc with a purpose, `@param` entries for every parameter, and an `@returns` entry. This includes the injectable `db` parameter on data-access helpers.
+
 The app's data lives in a local SQLite database accessed through **Drizzle ORM** over Node.js's built-in `node:sqlite` driver. It is consumed at **build time** from Astro page frontmatter — there is no runtime API server. Schema changes are managed with **drizzle-kit** migrations.
 
 ## Layout
@@ -45,6 +47,12 @@ import { asc, count, eq } from 'drizzle-orm';
 import type { Database } from './db';
 import { games } from '../../db/schema';
 
+/**
+ * Returns game IDs in the stable title order used by static routes.
+ *
+ * @param db Injectable Drizzle database instance.
+ * @returns Game IDs ordered alphabetically by title.
+ */
 export async function getAllGameIds(db: Database): Promise<number[]> {
   const rows = await db.select({ id: games.id }).from(games).orderBy(asc(games.title));
   return rows.map((r) => r.id);
